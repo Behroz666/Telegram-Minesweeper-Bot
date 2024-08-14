@@ -2,7 +2,7 @@ import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-
+description = "**Minesweeper: Overview and How to Play**\n\n**Objective:**  \nThe goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.\n\n**How to Play:**\n1. **Start by Clicking a Square:**  \n   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.\n\n2. **Understand the Numbers:**  \n   - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.\n\n3. **Clear the Grid:**\n   - If you click on a mine, the game is over.\n   - The game is won when all non-mine squares are revealed.\n\n**Tips:**\n- Start with corners or edges to get better information.\n- If you're unsure, guess, but be cautious!\n\nEnjoy the challenge and improve your strategy with practice!"
 no_after = [9,18,27,36,45,54,63,72,81]
 no_before = [1,10,19,28,37,46,55,64,73]
 
@@ -85,11 +85,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     [InlineKeyboardButton(apart[8][0], callback_data='73'),InlineKeyboardButton(apart[8][1], callback_data='74'), InlineKeyboardButton(apart[8][2], callback_data='75'), InlineKeyboardButton(apart[8][3], callback_data='76'), InlineKeyboardButton(apart[8][4], callback_data='77'), InlineKeyboardButton(apart[8][5], callback_data='78'), InlineKeyboardButton(apart[8][6], callback_data='79'), InlineKeyboardButton(apart[8][7], callback_data='80'), InlineKeyboardButton(apart[8][8], callback_data='81')],
 ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("Game Begin ..............................", parse_mode='Markdown', reply_markup=reply_markup)
-
+    await update.message.reply_text(description, parse_mode='Markdown', reply_markup=reply_markup)
 
 def main() -> None:
-    application = Application.builder().token('Your TOKEN').build()
+    application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
     application.add_handler(CommandHandler("start", start))
     #application.add_handler(CallbackQueryHandler(button))
     application.run_polling()
