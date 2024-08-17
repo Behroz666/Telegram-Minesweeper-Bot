@@ -6,10 +6,14 @@ description = "**Minesweeper: Overview and How to Play**\n\n**Objective:**  \nTh
 no_after = [9,18,27,36,45,54,63,72,81]
 no_before = [1,10,19,28,37,46,55,64,73]
 game = ["➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖"]
+flags = []
+opened = []
+bomb = True
+flag = False
 
 def  make_keyboard(apart):
     keyboard = [
-    [InlineKeyboardButton(apart[0][0], callback_data='0'),InlineKeyboardButton(apart[0][1], callback_data='2'), InlineKeyboardButton(apart[0][2], callback_data='3'), InlineKeyboardButton(apart[0][3], callback_data='4'), InlineKeyboardButton(apart[0][4], callback_data='5'), InlineKeyboardButton(apart[0][5], callback_data='6'), InlineKeyboardButton(apart[0][6], callback_data='7'), InlineKeyboardButton(apart[0][7], callback_data='8'), InlineKeyboardButton(apart[0][8], callback_data='9')],
+    [InlineKeyboardButton(apart[0][0], callback_data='1'),InlineKeyboardButton(apart[0][1], callback_data='2'), InlineKeyboardButton(apart[0][2], callback_data='3'), InlineKeyboardButton(apart[0][3], callback_data='4'), InlineKeyboardButton(apart[0][4], callback_data='5'), InlineKeyboardButton(apart[0][5], callback_data='6'), InlineKeyboardButton(apart[0][6], callback_data='7'), InlineKeyboardButton(apart[0][7], callback_data='8'), InlineKeyboardButton(apart[0][8], callback_data='9')],
     [InlineKeyboardButton(apart[1][0], callback_data='10'),InlineKeyboardButton(apart[1][1], callback_data='11'), InlineKeyboardButton(apart[1][2], callback_data='12'), InlineKeyboardButton(apart[1][3], callback_data='13'), InlineKeyboardButton(apart[1][4], callback_data='14'), InlineKeyboardButton(apart[1][5], callback_data='15'), InlineKeyboardButton(apart[1][6], callback_data='16'), InlineKeyboardButton(apart[1][7], callback_data='17'), InlineKeyboardButton(apart[1][8], callback_data='18')],
     [InlineKeyboardButton(apart[2][0], callback_data='19'),InlineKeyboardButton(apart[2][1], callback_data='20'), InlineKeyboardButton(apart[2][2], callback_data='21'), InlineKeyboardButton(apart[2][3], callback_data='22'), InlineKeyboardButton(apart[2][4], callback_data='23'), InlineKeyboardButton(apart[2][5], callback_data='24'), InlineKeyboardButton(apart[2][6], callback_data='25'), InlineKeyboardButton(apart[2][7], callback_data='26'), InlineKeyboardButton(apart[2][8], callback_data='27')],
     [InlineKeyboardButton(apart[3][0], callback_data='28'),InlineKeyboardButton(apart[3][1], callback_data='29'), InlineKeyboardButton(apart[3][2], callback_data='30'), InlineKeyboardButton(apart[3][3], callback_data='31'), InlineKeyboardButton(apart[3][4], callback_data='32'), InlineKeyboardButton(apart[3][5], callback_data='33'), InlineKeyboardButton(apart[3][6], callback_data='34'), InlineKeyboardButton(apart[3][7], callback_data='35'), InlineKeyboardButton(apart[3][8], callback_data='36')],
@@ -88,15 +92,28 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         i += 1
         continue
     
-    apart = chunk(game)
-    keyboard = make_keyboard(apart)
+    keyboard = make_keyboard(chunk(game))
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(description, parse_mode='Markdown', reply_markup=reply_markup)
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global flag, bomb
     query = update.callback_query
     await query.answer()
     choice = query.data
+    if choice == "flag":
+        flag = True
+        bomb = False
+    elif choice == "bomb":
+        flag = False
+        bomb = True
+    else: 
+        if flag :
+            game[int(choice) - 1] = "🚩"
+            flags.append(int(choice))
+            keyboard = make_keyboard(chunk(game))
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
