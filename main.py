@@ -108,12 +108,20 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         flag = False
         bomb = True
     else: 
-        if flag :
-            game[int(choice) - 1] = "🚩"
-            flags.append(int(choice))
-            keyboard = make_keyboard(chunk(game))
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_reply_markup(reply_markup=reply_markup)
+        choice = int(choice)
+        if flag:
+            if choice not in flags :
+                game[choice - 1] = "🚩"
+                flags.append(choice)
+                keyboard = make_keyboard(chunk(game))
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await query.edit_message_reply_markup(reply_markup=reply_markup)
+            else:
+                game[choice - 1] = "➖"
+                flags.remove(choice)
+                keyboard = make_keyboard(chunk(game))
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await query.edit_message_reply_markup(reply_markup=reply_markup)
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
