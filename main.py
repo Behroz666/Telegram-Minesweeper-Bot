@@ -92,9 +92,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         i += 1
         continue
     
-    keyboard = make_keyboard(chunk(game))
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(description, parse_mode='Markdown', reply_markup=reply_markup)
+    await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global flag, bomb
@@ -104,24 +102,24 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if choice == "flag":
         flag = True
         bomb = False
+        await query.edit_message_text(f"{description}\n\n⭕**Alert : Falg mode enabled**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
     elif choice == "bomb":
         flag = False
         bomb = True
+        await query.edit_message_text(f"{description}\n\n⭕**Alert : Bomb mode enabled**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
     else: 
         choice = int(choice)
         if flag:
             if choice not in flags :
                 game[choice - 1] = "🚩"
                 flags.append(choice)
-                keyboard = make_keyboard(chunk(game))
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                await query.edit_message_reply_markup(reply_markup=reply_markup)
+                await query.edit_message_text(f"{description}\n\n⭕**Alert : Flag added**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
             else:
                 game[choice - 1] = "➖"
                 flags.remove(choice)
-                keyboard = make_keyboard(chunk(game))
-                reply_markup = InlineKeyboardMarkup(keyboard)
-                await query.edit_message_reply_markup(reply_markup=reply_markup)
+                await query.edit_message_text(f"{description}\n\n⭕**Alert : Flag removed**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+        # elif bomb:
+        #     if choice in flags:
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
