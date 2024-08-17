@@ -1,4 +1,5 @@
 import random
+import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
@@ -36,7 +37,7 @@ def chunk(table):
     return(rows)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-
+    global bomb_blocks, table
     bomb_blocks = random.sample(range(1, 82), 10)
 
     table = []
@@ -95,7 +96,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb
+    global flag, bomb, bomb_blocks, table
     query = update.callback_query
     await query.answer()
     choice = query.data
@@ -118,8 +119,56 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 game[choice - 1] = "➖"
                 flags.remove(choice)
                 await query.edit_message_text(f"{description}\n\n⭕**Alert : Flag removed**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
-        # elif bomb:
-        #     if choice in flags:
+        elif bomb:
+            if choice in flags:
+                await query.edit_message_text(f"{description}\n\n⭕**Alert : It's Flag! you have to remove it fisrt**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+            else: 
+                if choice in bomb_blocks:
+                    await query.edit_message_text("You lost",reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game)))) # make function for a lost game with different call backs
+                else: 
+                    pre_opened = copy.deepcopy(opened)
+                    opened.append(choice)
+                    cycle_opened = []
+                    while pre_opened != opened and cycle_opened != opened:
+                        cycle_opened = copy.deepcopy(opened)
+                        for i in opened:
+                            if i == 0:
+                                if i not in no_after and i not in no_before:
+                                    if  table[i-2] != "*":
+                                        opened.append(i-1)
+                                    if table[i] != "*":
+                                        opened.append(i+1)
+                                    for a in [7,8,9]:
+                                        if table[i-1-a] != "*" and i-1-a > 0:
+                                            opened.append(i-a)
+                                        if table[i-1+a] != "*" and i-1+a < 81:
+                                            opened.append(i+a)
+                                elif i in no_after:
+                                    if table[i-2] != "*":
+                                        opened.append(i-1)
+                                    if table[i-10] != "*" and i - 10 > 0:
+                                        opened.append(i-9)
+                                    if table[i-11] != "*" and i - 11 > 0:
+                                        opened.append(i-10)
+                                    if table[i+8] != "*" and i + 8 < 80:
+                                        opened.append(i+9)
+                                    if table[i+7] != "*" and i + 7 < 80:
+                                        opened.append(i+8)
+                                elif i in no_before:
+                                    if table[i] != "*": 
+                                        opened.append(i+1)
+                                    if table[i-10] != "*" and i - 10 > 0:
+                                        opened.append(i-9)
+                                    if table[i-9] != "*" and i - 9 > 0: 
+                                        opened.append(i-8)
+                                    if table[i+8] != "*" and i + 8 < 80:
+                                        opened.append(i+9)
+                                    if table[i+9] != "*" and i + 9 < 80: 
+                                        opened.append(i+10)
+                        continue
+                    for i in opened:
+                        game[i-1] = table[i-1]
+                    await query.edit_message_text(f"{description}\n\n⭕**Alert : New cell opened**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
