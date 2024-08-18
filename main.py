@@ -6,7 +6,6 @@ from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQuer
 description = "**Minesweeper: Overview and How to Play**\n\n**Objective:**  \nThe goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.\n\n**How to Play:**\n1. **Start by Clicking a Square:**  \n   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.\n\n2. **Understand the Numbers:**  \n   - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.\n\n3. **Clear the Grid:**\n   - If you click on a mine, the game is over.\n   - The game is won when all non-mine squares are revealed.\n\n**Tips:**\n- Start with corners or edges to get better information.\n- If you're unsure, guess, but be cautious!\n\nEnjoy the challenge and improve your strategy with practice!"
 no_after = [9,18,27,36,45,54,63,72,81]
 no_before = [1,10,19,28,37,46,55,64,73]
-game = ["➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖"]
 flags = []
 opened = []
 bomb = True
@@ -37,7 +36,8 @@ def chunk(table):
     return(rows)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global bomb_blocks, table
+    global bomb_blocks, table, game
+    game = ["➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖"]
     bomb_blocks = random.sample(range(1, 82), 10)
     table = []
     i = 1
@@ -95,35 +95,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, table, no_after, no_before
+    global flag, bomb, bomb_blocks, table, no_after, no_before, game
     query = update.callback_query
-    await query.answer()
+    #await query.answer()
     choice = query.data
     if choice == "flag":
         flag = True
         bomb = False
-        await query.edit_message_text(f"{description}\n\n⭕**Alert : Falg mode enabled**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+        await query.answer("Flag mode enabled")
     elif choice == "bomb":
         flag = False
         bomb = True
-        await query.edit_message_text(f"{description}\n\n⭕**Alert : Bomb mode enabled**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+        await query.answer("Bomb mode enabled")
     else: 
         choice = int(choice)
         if flag:
             if choice not in flags :
                 game[choice - 1] = "🚩"
                 flags.append(choice)
-                await query.edit_message_text(f"{description}\n\n⭕**Alert : Flag added**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.edit_message_text(description, parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.answer("Flag added")
             else:
                 game[choice - 1] = "➖"
                 flags.remove(choice)
-                await query.edit_message_text(f"{description}\n\n⭕**Alert : Flag removed**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.edit_message_text(description, parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.answer("Flag removed")
         elif bomb:
             if choice in flags:
-                await query.edit_message_text(f"{description}\n\n⭕**Alert : It's Flag! you have to remove it fisrt**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.answer("It's Flag! you have to remove it fisrt")
             else: 
                 if choice in bomb_blocks:
-                    await query.edit_message_text("You lost",reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game)))) # make function for a lost game with different call backs
+                    await query.edit_message_text("You lost",reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game)))) #TODO make function for a lost game with different call backs + make win state
                 else: 
                     pre_opened = copy.deepcopy(opened)
                     opened.append(choice)
@@ -132,7 +134,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         cycle_opened = copy.deepcopy(opened)
                         for i in opened:
                             if table[i-1] == 0:
-                                print("its zero")
                                 if i not in no_after and i not in no_before:
                                     if  table[i-2] != "*" and i - 1 not in opened:
                                         opened.append(i-1)
@@ -168,7 +169,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         continue
                     for i in opened:
                         game[i-1] = table[i-1]
-                    await query.edit_message_text(f"{description}\n\n⭕**Alert : New cell opened**", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                    await query.edit_message_text(description, parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                    await query.answer("New cell opened")
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
