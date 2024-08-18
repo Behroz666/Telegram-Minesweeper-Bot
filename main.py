@@ -39,7 +39,6 @@ def chunk(table):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global bomb_blocks, table
     bomb_blocks = random.sample(range(1, 82), 10)
-
     table = []
     i = 1
     while i < 82:
@@ -96,7 +95,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, table
+    global flag, bomb, bomb_blocks, table, no_after, no_before
     query = update.callback_query
     await query.answer()
     choice = query.data
@@ -132,38 +131,39 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     while pre_opened != opened and cycle_opened != opened:
                         cycle_opened = copy.deepcopy(opened)
                         for i in opened:
-                            if i == 0:
+                            if table[i-1] == 0:
+                                print("its zero")
                                 if i not in no_after and i not in no_before:
-                                    if  table[i-2] != "*":
+                                    if  table[i-2] != "*" and i - 1 not in opened:
                                         opened.append(i-1)
-                                    if table[i] != "*":
+                                    if table[i] != "*" and i + 1 not in opened:
                                         opened.append(i+1)
                                     for a in [7,8,9]:
-                                        if table[i-1-a] != "*" and i-1-a > 0:
+                                        if i-1-a > 0 and table[i-1-a] != "*" and i - a not in opened:
                                             opened.append(i-a)
-                                        if table[i-1+a] != "*" and i-1+a < 81:
+                                        if i-1+a < 81 and table[i-1+a] != "*" and i + a not in opened:
                                             opened.append(i+a)
                                 elif i in no_after:
-                                    if table[i-2] != "*":
+                                    if table[i-2] != "*" and i - 1 not in opened:
                                         opened.append(i-1)
-                                    if table[i-10] != "*" and i - 10 > 0:
+                                    if i - 10 > 0 and table[i-10] != "*" and i - 9 not in opened:
                                         opened.append(i-9)
-                                    if table[i-11] != "*" and i - 11 > 0:
+                                    if i - 11 > 0 and table[i-11] != "*" and i - 10 not in opened:
                                         opened.append(i-10)
-                                    if table[i+8] != "*" and i + 8 < 80:
+                                    if i + 8 < 80 and table[i+8] != "*" and i + 9 not in opened:
                                         opened.append(i+9)
-                                    if table[i+7] != "*" and i + 7 < 80:
+                                    if i + 7 < 80 and table[i+7] != "*" and i + 8 not in opened:
                                         opened.append(i+8)
                                 elif i in no_before:
-                                    if table[i] != "*": 
+                                    if table[i] != "*" and i + 1 not in opened: 
                                         opened.append(i+1)
-                                    if table[i-10] != "*" and i - 10 > 0:
+                                    if i - 10 > 0 and table[i-10] != "*" and i - 9 not in opened:
                                         opened.append(i-9)
-                                    if table[i-9] != "*" and i - 9 > 0: 
+                                    if i - 9 > 0 and table[i-9] != "*" and i - 8 not in opened: 
                                         opened.append(i-8)
-                                    if table[i+8] != "*" and i + 8 < 80:
+                                    if i + 8 < 80 and table[i+8] != "*" and i + 9 not in opened:
                                         opened.append(i+9)
-                                    if table[i+9] != "*" and i + 9 < 80: 
+                                    if i + 9 < 80 and table[i+9] != "*" and i + 10 not in opened: 
                                         opened.append(i+10)
                         continue
                     for i in opened:
