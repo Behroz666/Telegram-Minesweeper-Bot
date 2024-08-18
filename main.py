@@ -3,6 +3,11 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
+#TODO add search for zero when clicked button is number
+#TODO add game over and won view
+#TODO add more cosmetic stuff and rewrite the tutorial 
+#TODO make sure that first oppend cell is not bomb
+
 description = "**Minesweeper: Overview and How to Play**\n\n**Objective:**  \nThe goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.\n\n**How to Play:**\n1. **Start by Clicking a Square:**  \n   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.\n\n2. **Understand the Numbers:**  \n   - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.\n\n3. **Clear the Grid:**\n   - If you click on a mine, the game is over.\n   - The game is won when all non-mine squares are revealed.\n\n**Tips:**\n- Start with corners or edges to get better information.\n- If you're unsure, guess, but be cautious!\n\nEnjoy the challenge and improve your strategy with practice!"
 no_after = [8,16,24,32,40,48,56,64]
 no_before = [1,9,17,25,33,41,49,57]
