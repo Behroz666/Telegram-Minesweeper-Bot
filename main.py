@@ -35,10 +35,11 @@ def chunk(table):
     return(rows)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global bomb_blocks, table, game
+    global bomb_blocks, table, game, opened
     game = ["➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖"]
     bomb_blocks = random.sample(range(1, 65), 10)
     table = []
+    opened=[]
     i = 1
     while i < 65:
         if i in bomb_blocks:
@@ -90,6 +91,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             table.append(b)
         i += 1
         continue
+    # print(bomb_blocks)
+    # for qqq in chunk(table):
+    #     print(qqq)
     await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -130,7 +134,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     cycle_opened = []
                     while pre_opened != opened and cycle_opened != opened:
                         cycle_opened = copy.deepcopy(opened)
-                        for i in opened:
+                        for i in cycle_opened:
                             if table[i-1] == 0:
                                 if i not in no_after and i not in no_before:
                                     if  table[i-2] != "*" and i - 1 not in opened:
@@ -150,7 +154,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                     if i - 10 > 0 and table[i-10] != "*" and i - 9 not in opened:
                                         opened.append(i-9)
                                     if i + 7 < 63 and table[i+7] != "*" and i + 8 not in opened:
-                                        opened.append(i+9)
+                                        opened.append(i+8)
                                     if i + 6 < 63 and table[i+6] != "*" and i + 7 not in opened:
                                         opened.append(i+7)
                                 elif i in no_before:
