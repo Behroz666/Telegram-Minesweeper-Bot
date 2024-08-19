@@ -3,10 +3,10 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO add search for zero when clicked button is number
 #TODO add game over and won view
 #TODO add more cosmetic stuff and rewrite the tutorial 
 #TODO make sure that first oppend cell is not bomb
+#TODO add a check list for cells to make  loops lighter
 
 description = "**Minesweeper: Overview and How to Play**\n\n**Objective:**  \nThe goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.\n\n**How to Play:**\n1. **Start by Clicking a Square:**  \n   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.\n\n2. **Understand the Numbers:**  \n   - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.\n\n3. **Clear the Grid:**\n   - If you click on a mine, the game is over.\n   - The game is won when all non-mine squares are revealed.\n\n**Tips:**\n- Start with corners or edges to get better information.\n- If you're unsure, guess, but be cautious!\n\nEnjoy the challenge and improve your strategy with practice!"
 no_after = [8,16,24,32,40,48,56,64]
@@ -96,9 +96,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             table.append(b)
         i += 1
         continue
-    # print(bomb_blocks)
-    # for qqq in chunk(table):
-    #     print(qqq)
+    print(bomb_blocks)
+    for qqq in chunk(table):
+        print(qqq)
     await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -173,6 +173,39 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                         opened.append(i+8)
                                     if i + 8 < 63 and table[i+8] != "*" and i + 9 not in opened: 
                                         opened.append(i+9)
+                            if table[i-1] in [1,2,3,4,5,6,7,8]:
+                                if i not in no_after and i not in no_before:
+                                    if  table[i-2] == 0 and i - 1 not in opened:
+                                        opened.append(i-1)
+                                    if table[i] == 0 and i + 1 not in opened:
+                                        opened.append(i+1)
+                                    for a in [7,8,9]:
+                                        if i-1-a > 0 and table[i-1-a] == 0 and i - a not in opened:
+                                            opened.append(i-a)
+                                        if i-1+a < 64 and table[i-1+a] == 0 and i + a not in opened:
+                                            opened.append(i+a)
+                                elif i in no_after:
+                                    if table[i-2] == 0 and i - 1 not in opened:
+                                        opened.append(i-1)
+                                    if i - 9 > 0 and table[i-9] == 0 and i - 8 not in opened:
+                                        opened.append(i-8)
+                                    if i - 10 > 0 and table[i-10] == 0 and i - 9 not in opened:
+                                        opened.append(i-9)
+                                    if i + 7 < 63 and table[i+7] == 0 and i + 8 not in opened:
+                                        opened.append(i+8)
+                                    if i + 6 < 63 and table[i+6] == 0 and i + 7 not in opened:
+                                        opened.append(i+7)
+                                elif i in no_before:
+                                    if table[i] == 0 and i + 1 not in opened: 
+                                        opened.append(i+1)
+                                    if i - 9 > 0 and table[i-9] == 0 and i - 8 not in opened:
+                                        opened.append(i-8)
+                                    if i - 8 > 0 and table[i-8] == 0 and i - 7 not in opened: 
+                                        opened.append(i-7)
+                                    if i + 7 < 63 and table[i+7] == 0 and i + 8 not in opened:
+                                        opened.append(i+8)
+                                    if i + 8 < 63 and table[i+8] == 0 and i + 9 not in opened: 
+                                        opened.append(i+9)                                
                         continue
                     for i in opened:
                         game[i-1] = table[i-1]
