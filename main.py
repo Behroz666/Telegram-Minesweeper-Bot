@@ -3,14 +3,34 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO add game over and won view
 #TODO add more cosmetic stuff and rewrite the tutorial (send it seprately)
 #TODO add reaction/emoji for lose or win
 #TODO make sure that first oppend cell is not bomb
 #TODO add a check list for cells to make  loops more efficient
 #TODO add json handling for multiple users
 
-description = "**Minesweeper: Overview and How to Play**\n\n**Objective:**  \nThe goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.\n\n**How to Play:**\n1. **Start by Clicking a Square:**  \n   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.\n\n2. **Understand the Numbers:**  \n   - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.\n\n3. **Clear the Grid:**\n   - If you click on a mine, the game is over.\n   - The game is won when all non-mine squares are revealed.\n\n**Tips:**\n- Start with corners or edges to get better information.\n- If you're unsure, guess, but be cautious!\n\nEnjoy the challenge and improve your strategy with practice!"
+description = """Minesweeper: Overview and How to Play
+
+Objective:  
+The goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.
+
+How to Play:
+1. Start by Clicking a Square:  
+   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.
+
+2. Understand the Numbers:  
+   - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.
+
+3. Clear the Grid:
+   - If you click on a mine, the game is over.
+   - The game is won when all non-mine squares are revealed.
+   - You can click on the Flag button bellow the game to mark bombs (click again to remove flag) you can open cells by clicking on bomb button
+
+Tips:
+- Start with corners or edges to get better information.
+- If you're unsure, guess, but be cautious!
+
+Enjoy the challenge and improve your strategy with practice!"""
 all = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
 no_after = [8,16,24,32,40,48,56,64]
 no_before = [1,9,17,25,33,41,49,57]
@@ -115,7 +135,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print(bomb_blocks)
     for qqq in chunk(table):
         print(qqq)
-    await update.message.reply_text(description, parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+    await update.message.reply_text(description)
+    await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global flag, bomb, bomb_blocks, table, no_after, no_before, game, all
@@ -125,10 +146,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if choice == "flag":
         flag = True
         bomb = False
+        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
         await query.answer("Flag mode enabled")
     elif choice == "bomb":
         flag = False
         bomb = True
+        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
         await query.answer("Bomb mode enabled")
     elif choice == "done":
         await query.answer("Your game is done. use /start")
@@ -138,12 +161,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             if choice not in flags :
                 game[choice - 1] = "🚩"
                 flags.append(choice)
-                await query.edit_message_text(description, parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
                 await query.answer("Flag added")
             else:
                 game[choice - 1] = "➖"
                 flags.remove(choice)
-                await query.edit_message_text(description, parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
                 await query.answer("Flag removed")
         elif bomb:
             if choice in flags:
@@ -155,7 +178,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     for i in bomb_blocks:
                         game[i-1] = "💣"
                     game[choice-1] = "🧨"
-                    await query.edit_message_text("You lost",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(game))))
+                    await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(game))))
                 else: 
                     pre_opened = copy.deepcopy(opened)
                     opened.append(choice)
@@ -235,9 +258,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     if sorted(opened) == list(set(all) - set(bomb_blocks)):
                         for i in bomb_blocks:
                             game[i-1] = "💣"
-                        await query.edit_message_text("You won",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(game))))
+                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Congratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(game))))
+                        await query.answer("Game won")
                     else:
-                        await query.edit_message_text(description, parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
                         await query.answer("New cell opened")
 
 def main() -> None:
