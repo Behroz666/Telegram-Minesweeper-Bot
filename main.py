@@ -3,7 +3,6 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO add more cosmetic stuff and rewrite the tutorial (send it seprately)
 #TODO add reaction/emoji for lose or win
 #TODO make sure that first oppend cell is not bomb
 #TODO add a check list for cells to make  loops more efficient
@@ -38,6 +37,29 @@ flags = []
 opened = []
 bomb = True
 flag = False
+
+def emoji(game):
+    global all
+    for i in all:
+        if game[i-1] == 0:
+            game[i-1] = "➖"
+        if game[i-1] == 1:
+            game[i-1] = "1️⃣"
+        if game[i-1] == 2:
+            game[i-1] = "2️⃣"        
+        if game[i-1] == 3:
+            game[i-1] = "3️⃣"
+        if game[i-1] == 4:
+            game[i-1] = "4️⃣"
+        if game[i-1] == 5:
+            game[i-1] = "5️⃣"
+        if game[i-1] == 6:
+            game[i-1] = "6️⃣"
+        if game[i-1] == 7:
+            game[i-1] = "7️⃣"
+        if game[i-1] == 8:
+            game[i-1] = "8️⃣"
+    return(game)
 
 def  make_keyboard(apart):
     keyboard = [
@@ -77,7 +99,7 @@ def chunk(table):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global bomb_blocks, table, game, opened
-    game = ["➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖","➖"]
+    game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
     bomb_blocks = sorted(random.sample(range(1, 65), 10))
     table = []
     opened=[]
@@ -136,7 +158,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     for qqq in chunk(table):
         print(qqq)
     await update.message.reply_text(description)
-    await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+    await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global flag, bomb, bomb_blocks, table, no_after, no_before, game, all
@@ -144,14 +166,16 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     #await query.answer()
     choice = query.data
     if choice == "flag":
+        if not flag : 
+            await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
         flag = True
         bomb = False
-        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
         await query.answer("Flag mode enabled")
     elif choice == "bomb":
+        if not bomb: 
+            await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
         flag = False
         bomb = True
-        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
         await query.answer("Bomb mode enabled")
     elif choice == "done":
         await query.answer("Your game is done. use /start")
@@ -161,12 +185,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             if choice not in flags :
                 game[choice - 1] = "🚩"
                 flags.append(choice)
-                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                 await query.answer("Flag added")
             else:
-                game[choice - 1] = "➖"
+                game[choice - 1] = "▫️"
                 flags.remove(choice)
-                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                 await query.answer("Flag removed")
         elif bomb:
             if choice in flags:
@@ -178,7 +202,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     for i in bomb_blocks:
                         game[i-1] = "💣"
                     game[choice-1] = "🧨"
-                    await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(game))))
+                    await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
                 else: 
                     pre_opened = copy.deepcopy(opened)
                     opened.append(choice)
@@ -258,10 +282,10 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     if sorted(opened) == list(set(all) - set(bomb_blocks)):
                         for i in bomb_blocks:
                             game[i-1] = "💣"
-                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Congratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(game))))
+                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Congratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
                         await query.answer("Game won")
                     else:
-                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(game))))
+                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                         await query.answer("New cell opened")
 
 def main() -> None:
