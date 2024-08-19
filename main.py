@@ -3,7 +3,6 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO add reaction/emoji for lose or win
 #TODO make sure that first oppend cell is not bomb
 #TODO add a check list for cells to make  loops more efficient
 #TODO add json handling for multiple users
@@ -98,7 +97,9 @@ def chunk(table):
     return(rows)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global bomb_blocks, table, game, opened
+    global bomb_blocks, table, game, opened, chat_id, message_id
+    chat_id = update.message.chat.id
+    message_id = update.message.message_id
     game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
     bomb_blocks = sorted(random.sample(range(1, 65), 10))
     table = []
@@ -161,7 +162,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, table, no_after, no_before, game, all
+    global flag, bomb, bomb_blocks, table, no_after, no_before, game, all, chat_id, message_id
     query = update.callback_query
     #await query.answer()
     choice = query.data
@@ -203,6 +204,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         game[i-1] = "💣"
                     game[choice-1] = "🧨"
                     await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
+                    await context.bot.setMessageReaction(chat_id=chat_id , message_id=message_id, reaction="🔥", is_big=True)
+                    await context.bot.send_message(text="💣" ,chat_id=chat_id)
                 else: 
                     pre_opened = copy.deepcopy(opened)
                     opened.append(choice)
@@ -283,6 +286,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         for i in bomb_blocks:
                             game[i-1] = "💣"
                         await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Congratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
+                        await context.bot.setMessageReaction(chat_id=chat_id , message_id=message_id, reaction="🎉", is_big=True)
+                        await context.bot.send_message(text="🎉" ,chat_id=chat_id)
                         await query.answer("Game won")
                     else:
                         await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
