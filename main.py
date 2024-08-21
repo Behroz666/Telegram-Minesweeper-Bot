@@ -1,8 +1,9 @@
 import random
 import copy
-import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
+
+data = {}
 
 description = """Minesweeper: Overview and How to Play
 
@@ -14,7 +15,7 @@ How to Play:
    - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.
    - If you click on a mine, the game is over.
    - The game is won when all non-mine squares are revealed.
-   - You can click on the Flag button bellow the game to mark bombs (click again to remove flag) you can open cells by clicking on bomb button
+   - You can click on the Flag button bellow the game to mark mines (click again to remove flag) you can open cells by clicking on mine button
 
 Tips:
 - Start with corners or edges to get better information.
@@ -26,10 +27,6 @@ default_game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","
 all = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
 no_after = [8,16,24,32,40,48,56,64]
 no_before = [1,9,17,25,33,41,49,57]
-flags = []
-opened = []
-bomb = True
-flag = False
 
 def emoji(game):
     global all
@@ -90,209 +87,215 @@ def chunk(table):
         i += 1
     return(rows)
 
-def make_table(num):
-    global bomb_blocks
-    bomb_blocks = sorted(random.sample(list(set(all) - set(num)), 10))
+def make_table(num, chat_id):
+    data[chat_id]["bomb blocks"] = sorted(random.sample(list(set(all) - set(num)), 10))
     table = []
     i = 1
     while i < 65:
-        if i in bomb_blocks:
+        if i in data[chat_id]["bomb blocks"]:
             table.append("*")
         else:
             b = 0
             if i not in no_after and i not in no_before:
-                if i + 1 in bomb_blocks:
+                if i + 1 in data[chat_id]["bomb blocks"]:
                     b += 1            
-                if i - 1 in bomb_blocks:
+                if i - 1 in data[chat_id]["bomb blocks"]:
                     b += 1
                 for num in [7,8,9]:
                     if i - num > 0 :
-                        if i - num in bomb_blocks:
+                        if i - num in data[chat_id]["bomb blocks"]:
                             b += 1
                     if i + num < 65 :
-                        if i + num in bomb_blocks:
+                        if i + num in data[chat_id]["bomb blocks"]:
                             b += 1
             elif i in no_after:
-                if i - 1 in bomb_blocks:
+                if i - 1 in data[chat_id]["bomb blocks"]:
                     b += 1            
                 if i - 8 > 0 :
-                    if i - 8 in bomb_blocks:
+                    if i - 8 in data[chat_id]["bomb blocks"]:
                         b += 1
                 if i + 8 < 65 :
-                    if i + 8 in bomb_blocks:
+                    if i + 8 in data[chat_id]["bomb blocks"]:
                         b += 1            
                 if i - 9 > 0 :
-                    if i - 9 in bomb_blocks:
+                    if i - 9 in data[chat_id]["bomb blocks"]:
                         b += 1
                 if i + 7 < 65 :
-                    if i + 7 in bomb_blocks:
+                    if i + 7 in data[chat_id]["bomb blocks"]:
                         b += 1
             elif i in no_before:
-                if i + 1 in bomb_blocks:
+                if i + 1 in data[chat_id]["bomb blocks"]:
                     b += 1            
                 if i - 8 > 0 :
-                    if i - 8 in bomb_blocks:
+                    if i - 8 in data[chat_id]["bomb blocks"]:
                         b += 1
                 if i + 8 < 65 :
-                    if i + 8 in bomb_blocks:
+                    if i + 8 in data[chat_id]["bomb blocks"]:
                         b += 1            
                 if i - 7 > 0 :
-                    if i - 7 in bomb_blocks:
+                    if i - 7 in data[chat_id]["bomb blocks"]:
                         b += 1
                 if i + 9 < 65 :
-                    if i + 9 in bomb_blocks:
+                    if i + 9 in data[chat_id]["bomb blocks"]:
                         b += 1
             table.append(b)
         i += 1
         continue
     return(table)
 
+def counter(flags):
+    return(10 - len(flags))
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global game, opened, checked, default_game, message_id
-    message_id = update.message.message_id
+    global default_game
     chat_id = update.message.chat.id
-    game = copy.deepcopy(default_game)
-    opened=[]
-    checked = []
+    if chat_id not in data:
+        data[chat_id] = {}
+    data[chat_id]["flags"] = []
+    data[chat_id]["opened"] = []
+    data[chat_id]["bomb"] = True
+    data[chat_id]["flag"] = False
+    data[chat_id]["message id"] = update.message.message_id
+    data[chat_id]["game"] = copy.deepcopy(default_game)
+    data[chat_id]["checked"] = []
     await update.message.reply_text(description)
-    await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
+    await update.message.reply_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, no_after, no_before, game, all, table, checked, default_game, message_id, flags
+    global no_after, no_before, all, default_game
     query = update.callback_query
     choice = query.data
     chat_id = query.from_user.id  
-    if game == default_game:
-        global table
-        table = make_table(choice)    
+    if data[chat_id]["game"] == default_game:
+        data[chat_id]["table"] = make_table(choice, chat_id)    
     if choice == "flag":
-        if not flag : 
-            await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
-        flag = True
-        bomb = False
+        if not data[chat_id]["flag"] : 
+            await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+        data[chat_id]["flag"] = True
+        data[chat_id]["bomb"] = False
         await query.answer("Flag mode enabled")        
     elif choice == "bomb":
-        if not bomb: 
-            await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
-        flag = False
-        bomb = True
-        await query.answer("Bomb mode enabled")
+        if not data[chat_id]["bomb"]: 
+            await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+        data[chat_id]["flag"] = False
+        data[chat_id]["bomb"] = True
+        await query.answer("Mine mode enabled")
     elif choice == "done":
         await query.answer("Your game is done. use /start")
     else: 
         choice = int(choice)
-        if flag:
-            if choice not in flags :
-                game[choice - 1] = "🚩"
-                flags.append(choice)
-                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
+        if data[chat_id]["flag"]:
+            if choice not in data[chat_id]["flags"] :
+                data[chat_id]["game"][choice - 1] = "🚩"
+                data[chat_id]["flags"].append(choice)
+                await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
                 await query.answer("Flag added")
             else:
-                game[choice - 1] = "▫️"
-                flags.remove(choice)
-                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
+                data[chat_id]["game"][choice - 1] = "▫️"
+                data[chat_id]["flags"].remove(choice)
+                await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
                 await query.answer("Flag removed")
-        elif bomb:
-            if choice in flags:
+        elif data[chat_id]["bomb"]:
+            if choice in data[chat_id]["flags"]:
                 await query.answer("It's Flag! you have to remove it fisrt")
-            elif choice in opened:
+            elif choice in data[chat_id]["opened"]:
                 await query.answer("Cell already openned")
             else: 
-                if choice in bomb_blocks:
-                    for i in bomb_blocks:
-                        if game[i-1] != "🚩":
-                            game[i-1] = "💣"
-                    game[choice-1] = "🧨"
-                    await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
-                    await context.bot.setMessageReaction(chat_id=chat_id , message_id=message_id, reaction="🔥", is_big=True)
+                if choice in data[chat_id]["bomb blocks"]:
+                    for i in data[chat_id]["bomb blocks"]:
+                        if data[chat_id]["game"][i-1] != "🚩":
+                            data[chat_id]["game"][i-1] = "💣"
+                    data[chat_id]["game"][choice-1] = "🧨"
+                    await query.edit_message_text(f"Minesweeper Game 🪖\n\nYou lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(data[chat_id]["game"])))))
+                    await context.bot.setMessageReaction(chat_id=chat_id , message_id=data[chat_id]["message id"], reaction="🔥", is_big=True)
                     await context.bot.send_message(text="💣" ,chat_id=chat_id)
                     await query.answer("You lost")
                 else: 
-                    pre_opened = copy.deepcopy(opened)
-                    opened.append(choice)
+                    pre_opened = copy.deepcopy(data[chat_id]["opened"])
+                    data[chat_id]["opened"].append(choice)
                     cycle_opened = []
-                    while pre_opened != opened and cycle_opened != opened:
-                        cycle_opened = copy.deepcopy(opened)
-                        for i in list(set(cycle_opened) - set(checked)):
-                            if table[i-1] == 0:
+                    while pre_opened != data[chat_id]["opened"] and cycle_opened != data[chat_id]["opened"]:
+                        cycle_opened = copy.deepcopy(data[chat_id]["opened"])
+                        for i in list(set(cycle_opened) - set(data[chat_id]["checked"])):
+                            if data[chat_id]["table"][i-1] == 0:
                                 if i not in no_after and i not in no_before:
-                                    if  table[i-2] != "*" and i - 1 not in opened:
-                                        opened.append(i-1)
-                                    if table[i] != "*" and i + 1 not in opened:
-                                        opened.append(i+1)
+                                    if  data[chat_id]["table"][i-2] != "*" and i - 1 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-1)
+                                    if data[chat_id]["table"][i] != "*" and i + 1 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+1)
                                     for a in [7,8,9]:
-                                        if i-1-a > 0 and table[i-1-a] != "*" and i - a not in opened:
-                                            opened.append(i-a)
-                                        if i-1+a < 64 and table[i-1+a] != "*" and i + a not in opened:
-                                            opened.append(i+a)
+                                        if i-1-a > 0 and data[chat_id]["table"][i-1-a] != "*" and i - a not in data[chat_id]["opened"]:
+                                            data[chat_id]["opened"].append(i-a)
+                                        if i-1+a < 64 and data[chat_id]["table"][i-1+a] != "*" and i + a not in data[chat_id]["opened"]:
+                                            data[chat_id]["opened"].append(i+a)
                                 elif i in no_after:
-                                    if table[i-2] != "*" and i - 1 not in opened:
-                                        opened.append(i-1)
-                                    if i - 9 > 0 and table[i-9] != "*" and i - 8 not in opened:
-                                        opened.append(i-8)
-                                    if i - 10 > 0 and table[i-10] != "*" and i - 9 not in opened:
-                                        opened.append(i-9)
-                                    if i + 7 < 63 and table[i+7] != "*" and i + 8 not in opened:
-                                        opened.append(i+8)
-                                    if i + 6 < 63 and table[i+6] != "*" and i + 7 not in opened:
-                                        opened.append(i+7)
+                                    if data[chat_id]["table"][i-2] != "*" and i - 1 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-1)
+                                    if i - 9 > 0 and data[chat_id]["table"][i-9] != "*" and i - 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-8)
+                                    if i - 10 > 0 and data[chat_id]["table"][i-10] != "*" and i - 9 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-9)
+                                    if i + 7 < 63 and data[chat_id]["table"][i+7] != "*" and i + 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+8)
+                                    if i + 6 < 63 and data[chat_id]["table"][i+6] != "*" and i + 7 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+7)
                                 elif i in no_before:
-                                    if table[i] != "*" and i + 1 not in opened: 
-                                        opened.append(i+1)
-                                    if i - 9 > 0 and table[i-9] != "*" and i - 8 not in opened:
-                                        opened.append(i-8)
-                                    if i - 8 > 0 and table[i-8] != "*" and i - 7 not in opened: 
-                                        opened.append(i-7)
-                                    if i + 7 < 63 and table[i+7] != "*" and i + 8 not in opened:
-                                        opened.append(i+8)
-                                    if i + 8 < 63 and table[i+8] != "*" and i + 9 not in opened: 
-                                        opened.append(i+9)
-                            if table[i-1] in [1,2,3,4,5,6,7,8]:
+                                    if data[chat_id]["table"][i] != "*" and i + 1 not in data[chat_id]["opened"]: 
+                                        data[chat_id]["opened"].append(i+1)
+                                    if i - 9 > 0 and data[chat_id]["table"][i-9] != "*" and i - 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-8)
+                                    if i - 8 > 0 and data[chat_id]["table"][i-8] != "*" and i - 7 not in data[chat_id]["opened"]: 
+                                        data[chat_id]["opened"].append(i-7)
+                                    if i + 7 < 63 and data[chat_id]["table"][i+7] != "*" and i + 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+8)
+                                    if i + 8 < 63 and data[chat_id]["table"][i+8] != "*" and i + 9 not in data[chat_id]["opened"]: 
+                                        data[chat_id]["opened"].append(i+9)
+                            if data[chat_id]["table"][i-1] in [1,2,3,4,5,6,7,8]:
                                 if i not in no_after and i not in no_before:
-                                    if  table[i-2] == 0 and i - 1 not in opened:
-                                        opened.append(i-1)
-                                    if table[i] == 0 and i + 1 not in opened:
-                                        opened.append(i+1)
+                                    if  data[chat_id]["table"][i-2] == 0 and i - 1 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-1)
+                                    if data[chat_id]["table"][i] == 0 and i + 1 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+1)
                                     for a in [7,8,9]:
-                                        if i-1-a > 0 and table[i-1-a] == 0 and i - a not in opened:
-                                            opened.append(i-a)
-                                        if i-1+a < 64 and table[i-1+a] == 0 and i + a not in opened:
-                                            opened.append(i+a)
+                                        if i-1-a > 0 and data[chat_id]["table"][i-1-a] == 0 and i - a not in data[chat_id]["opened"]:
+                                            data[chat_id]["opened"].append(i-a)
+                                        if i-1+a < 64 and data[chat_id]["table"][i-1+a] == 0 and i + a not in data[chat_id]["opened"]:
+                                            data[chat_id]["opened"].append(i+a)
                                 elif i in no_after:
-                                    if table[i-2] == 0 and i - 1 not in opened:
-                                        opened.append(i-1)
-                                    if i - 9 > 0 and table[i-9] == 0 and i - 8 not in opened:
-                                        opened.append(i-8)
-                                    if i - 10 > 0 and table[i-10] == 0 and i - 9 not in opened:
-                                        opened.append(i-9)
-                                    if i + 7 < 63 and table[i+7] == 0 and i + 8 not in opened:
-                                        opened.append(i+8)
-                                    if i + 6 < 63 and table[i+6] == 0 and i + 7 not in opened:
-                                        opened.append(i+7)
+                                    if data[chat_id]["table"][i-2] == 0 and i - 1 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-1)
+                                    if i - 9 > 0 and data[chat_id]["table"][i-9] == 0 and i - 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-8)
+                                    if i - 10 > 0 and data[chat_id]["table"][i-10] == 0 and i - 9 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-9)
+                                    if i + 7 < 63 and data[chat_id]["table"][i+7] == 0 and i + 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+8)
+                                    if i + 6 < 63 and data[chat_id]["table"][i+6] == 0 and i + 7 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+7)
                                 elif i in no_before:
-                                    if table[i] == 0 and i + 1 not in opened: 
-                                        opened.append(i+1)
-                                    if i - 9 > 0 and table[i-9] == 0 and i - 8 not in opened:
-                                        opened.append(i-8)
-                                    if i - 8 > 0 and table[i-8] == 0 and i - 7 not in opened: 
-                                        opened.append(i-7)
-                                    if i + 7 < 63 and table[i+7] == 0 and i + 8 not in opened:
-                                        opened.append(i+8)
-                                    if i + 8 < 63 and table[i+8] == 0 and i + 9 not in opened: 
-                                        opened.append(i+9)                                
-                            checked.append(i)
+                                    if data[chat_id]["table"][i] == 0 and i + 1 not in data[chat_id]["opened"]: 
+                                        data[chat_id]["opened"].append(i+1)
+                                    if i - 9 > 0 and data[chat_id]["table"][i-9] == 0 and i - 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i-8)
+                                    if i - 8 > 0 and data[chat_id]["table"][i-8] == 0 and i - 7 not in data[chat_id]["opened"]: 
+                                        data[chat_id]["opened"].append(i-7)
+                                    if i + 7 < 63 and data[chat_id]["table"][i+7] == 0 and i + 8 not in data[chat_id]["opened"]:
+                                        data[chat_id]["opened"].append(i+8)
+                                    if i + 8 < 63 and data[chat_id]["table"][i+8] == 0 and i + 9 not in data[chat_id]["opened"]: 
+                                        data[chat_id]["opened"].append(i+9)                                
+                            data[chat_id]["checked"].append(i)
                         continue
-                    for i in opened:
-                        game[i-1] = table[i-1]
-                    if sorted(opened) == list(set(all) - set(bomb_blocks)):
-                        for i in bomb_blocks:
-                            game[i-1] = "💣"
-                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Congratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
-                        await context.bot.setMessageReaction(chat_id=chat_id , message_id=message_id, reaction="🎉", is_big=True)
+                    for i in data[chat_id]["opened"]:
+                        data[chat_id]["game"][i-1] = data[chat_id]["table"][i-1]
+                    if sorted(data[chat_id]["opened"]) == list(set(all) - set(data[chat_id]["bomb blocks"])):
+                        for i in data[chat_id]["bomb blocks"]:
+                            data[chat_id]["game"][i-1] = "💣"
+                        await query.edit_message_text(f"Minesweeper Game 🪖\n\nCongratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(data[chat_id]["game"])))))
+                        await context.bot.setMessageReaction(chat_id=chat_id , message_id=data[chat_id]["message id"], reaction="🎉", is_big=True)
                         await context.bot.send_message(text="🎉" ,chat_id=chat_id)
                         await query.answer("Game won")
                     else:
-                        await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
+                        await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
                         await query.answer("New cell opened")
 
 def main() -> None:
