@@ -1,5 +1,6 @@
 import random
 import copy
+import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
@@ -22,6 +23,8 @@ Tips:
 - If you're unsure, guess, but be cautious!
 
 Enjoy the challenge and improve your strategy with practice!"""
+
+default_game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
 all = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]
 no_after = [8,16,24,32,40,48,56,64]
 no_before = [1,9,17,25,33,41,49,57]
@@ -147,35 +150,51 @@ def make_table(num):
     return(table)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global game, opened, chat_id, message_id, checked
-    chat_id = update.message.chat.id
+    global game, opened, checked, default_game, message_id
     message_id = update.message.message_id
-    game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
+    game = copy.deepcopy(default_game)
     opened=[]
     checked = []
     await update.message.reply_text(description)
     await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, no_after, no_before, game, all, chat_id, message_id, table, checked
+    global flag, bomb, bomb_blocks, no_after, no_before, game, all, table, checked, default_game, message_id, flags
     query = update.callback_query
-    #await query.answer()
     choice = query.data
-    if game == ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]:
+    chat_id = query.from_user.id
+    if game == default_game:
         global table
-        table = make_table(choice)    
+        table = make_table(choice)  
+    else : 
+        with open(f"{chat_id}.json", "r") as file:
+            variables = json.load(file)
+        game =  variables["game board"]
+        table = variables["full table"]
+        bomb_blocks = variables["bombs"]
+        checked = variables["checked cells"]
+        message_id = variables["message id"]
+        bomb = variables["bomb"]
+        flag = variables["flag"]
+        flags = variables["marked flags"]
     if choice == "flag":
         if not flag : 
             await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
         flag = True
         bomb = False
         await query.answer("Flag mode enabled")
+        variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
+        with open(f"{chat_id}.json", "w") as file:
+            json.dump(variables, file)         
     elif choice == "bomb":
         if not bomb: 
             await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
         flag = False
         bomb = True
         await query.answer("Bomb mode enabled")
+        variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
+        with open(f"{chat_id}.json", "w") as file:
+            json.dump(variables, file) 
     elif choice == "done":
         await query.answer("Your game is done. use /start")
     else: 
@@ -186,11 +205,17 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 flags.append(choice)
                 await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                 await query.answer("Flag added")
+                variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
+                with open(f"{chat_id}.json", "w") as file:
+                    json.dump(variables, file) 
             else:
                 game[choice - 1] = "▫️"
                 flags.remove(choice)
                 await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                 await query.answer("Flag removed")
+                variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
+                with open(f"{chat_id}.json", "w") as file:
+                    json.dump(variables, file) 
         elif bomb:
             if choice in flags:
                 await query.answer("It's Flag! you have to remove it fisrt")
@@ -205,6 +230,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
                     await context.bot.setMessageReaction(chat_id=chat_id , message_id=message_id, reaction="🔥", is_big=True)
                     await context.bot.send_message(text="💣" ,chat_id=chat_id)
+                    await query.answer("You lost")
                 else: 
                     pre_opened = copy.deepcopy(opened)
                     opened.append(choice)
@@ -292,6 +318,9 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     else:
                         await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                         await query.answer("New cell opened")
+                        variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
+                        with open(f"{chat_id}.json", "w") as file:
+                            json.dump(variables, file) 
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
