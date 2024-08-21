@@ -11,6 +11,7 @@ Objective:
 The goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.
 
 How to Play:
+   - Use /start to start new game
    - The first click will definitely reveal a number or an empty space. An empty space indicates no adjacent mines. 
    - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.
    - If you click on a mine, the game is over.
@@ -146,6 +147,9 @@ def make_table(num, chat_id):
 def counter(flags):
     return(10 - len(flags))
 
+async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text(description)    
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global default_game
     chat_id = update.message.chat.id
@@ -158,7 +162,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data[chat_id]["message id"] = update.message.message_id
     data[chat_id]["game"] = copy.deepcopy(default_game)
     data[chat_id]["checked"] = []
-    await update.message.reply_text(description)
     await update.message.reply_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -301,6 +304,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("info", info))
     application.add_handler(CallbackQueryHandler(button))
     application.run_polling()
 
