@@ -21,6 +21,7 @@ How to Play:
 Tips:
 - Start with corners or edges to get better information.
 - If you're unsure, guess, but be cautious!
+- The mine counter is based on number of your flags
 
 Enjoy the challenge and improve your strategy with practice!"""
 
@@ -302,7 +303,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         await query.answer("New cell opened")
 
 def main() -> None:
-    application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
+    application = Application.builder().token('Your Bot token from @BotFather').build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("info", info))
     application.add_handler(CallbackQueryHandler(button))
