@@ -3,7 +3,6 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO add a check list for cells to make  loops more efficient
 #TODO add json handling for multiple users
 
 description = """Minesweeper: Overview and How to Play
@@ -148,16 +147,17 @@ def make_table(num):
     return(table)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global game, opened, chat_id, message_id
+    global game, opened, chat_id, message_id, checked
     chat_id = update.message.chat.id
     message_id = update.message.message_id
     game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
     opened=[]
+    checked = []
     await update.message.reply_text(description)
     await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, no_after, no_before, game, all, chat_id, message_id, table
+    global flag, bomb, bomb_blocks, no_after, no_before, game, all, chat_id, message_id, table, checked
     query = update.callback_query
     #await query.answer()
     choice = query.data
@@ -211,7 +211,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     cycle_opened = []
                     while pre_opened != opened and cycle_opened != opened:
                         cycle_opened = copy.deepcopy(opened)
-                        for i in cycle_opened:
+                        for i in list(set(cycle_opened) - set(checked)):
                             if table[i-1] == 0:
                                 if i not in no_after and i not in no_before:
                                     if  table[i-2] != "*" and i - 1 not in opened:
@@ -278,6 +278,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                                         opened.append(i+8)
                                     if i + 8 < 63 and table[i+8] == 0 and i + 9 not in opened: 
                                         opened.append(i+9)                                
+                            checked.append(i)
                         continue
                     for i in opened:
                         game[i-1] = table[i-1]
