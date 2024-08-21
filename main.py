@@ -4,8 +4,6 @@ import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO add json handling for multiple users
-
 description = """Minesweeper: Overview and How to Play
 
 Objective:  
@@ -152,6 +150,7 @@ def make_table(num):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global game, opened, checked, default_game, message_id
     message_id = update.message.message_id
+    chat_id = update.message.chat.id
     game = copy.deepcopy(default_game)
     opened=[]
     checked = []
@@ -162,39 +161,22 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global flag, bomb, bomb_blocks, no_after, no_before, game, all, table, checked, default_game, message_id, flags
     query = update.callback_query
     choice = query.data
-    chat_id = query.from_user.id
+    chat_id = query.from_user.id  
     if game == default_game:
         global table
-        table = make_table(choice)  
-    else : 
-        with open(f"{chat_id}.json", "r") as file:
-            variables = json.load(file)
-        game =  variables["game board"]
-        table = variables["full table"]
-        bomb_blocks = variables["bombs"]
-        checked = variables["checked cells"]
-        message_id = variables["message id"]
-        bomb = variables["bomb"]
-        flag = variables["flag"]
-        flags = variables["marked flags"]
+        table = make_table(choice)    
     if choice == "flag":
         if not flag : 
             await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
         flag = True
         bomb = False
-        await query.answer("Flag mode enabled")
-        variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
-        with open(f"{chat_id}.json", "w") as file:
-            json.dump(variables, file)         
+        await query.answer("Flag mode enabled")        
     elif choice == "bomb":
         if not bomb: 
             await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
         flag = False
         bomb = True
         await query.answer("Bomb mode enabled")
-        variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
-        with open(f"{chat_id}.json", "w") as file:
-            json.dump(variables, file) 
     elif choice == "done":
         await query.answer("Your game is done. use /start")
     else: 
@@ -205,17 +187,11 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 flags.append(choice)
                 await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                 await query.answer("Flag added")
-                variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
-                with open(f"{chat_id}.json", "w") as file:
-                    json.dump(variables, file) 
             else:
                 game[choice - 1] = "▫️"
                 flags.remove(choice)
-                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
+                await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                 await query.answer("Flag removed")
-                variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
-                with open(f"{chat_id}.json", "w") as file:
-                    json.dump(variables, file) 
         elif bomb:
             if choice in flags:
                 await query.answer("It's Flag! you have to remove it fisrt")
@@ -318,9 +294,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     else:
                         await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
                         await query.answer("New cell opened")
-                        variables = {"game board":game, "full table": table, "bombs": bomb_blocks, "checked cells":checked, "message id":message_id, "bomb":bomb, "flag":flag, "marked flags":flags}
-                        with open(f"{chat_id}.json", "w") as file:
-                            json.dump(variables, file) 
 
 def main() -> None:
     application = Application.builder().token('7538249939:AAEeQzgiD-42si5VkG0DQipTm7IwYo9unpk').build()
