@@ -3,7 +3,6 @@ import copy
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler, MessageHandler, filters
 
-#TODO make sure that first oppend cell is not bomb
 #TODO add a check list for cells to make  loops more efficient
 #TODO add json handling for multiple users
 
@@ -13,13 +12,8 @@ Objective:
 The goal of Minesweeper is to clear a grid of hidden mines without detonating any. The numbers revealed on the grid indicate how many mines are adjacent to that square, helping you deduce where the mines are hidden.
 
 How to Play:
-1. Start by Clicking a Square:  
-   - The first click will reveal a number or an empty space. An empty space indicates no adjacent mines.
-
-2. Understand the Numbers:  
+   - The first click will definitely reveal a number or an empty space. An empty space indicates no adjacent mines. 
    - Each number on a revealed square shows how many mines are adjacent to it (including diagonals). Use this information to figure out where the mines might be.
-
-3. Clear the Grid:
    - If you click on a mine, the game is over.
    - The game is won when all non-mine squares are revealed.
    - You can click on the Flag button bellow the game to mark bombs (click again to remove flag) you can open cells by clicking on bomb button
@@ -96,14 +90,10 @@ def chunk(table):
         i += 1
     return(rows)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global bomb_blocks, table, game, opened, chat_id, message_id
-    chat_id = update.message.chat.id
-    message_id = update.message.message_id
-    game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
-    bomb_blocks = sorted(random.sample(range(1, 65), 10))
+def make_table(num):
+    global bomb_blocks
+    bomb_blocks = sorted(random.sample(list(set(all) - set(num)), 10))
     table = []
-    opened=[]
     i = 1
     while i < 65:
         if i in bomb_blocks:
@@ -155,17 +145,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             table.append(b)
         i += 1
         continue
-    print(bomb_blocks)
-    for qqq in chunk(table):
-        print(qqq)
+    return(table)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global game, opened, chat_id, message_id
+    chat_id = update.message.chat.id
+    message_id = update.message.message_id
+    game = ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]
+    opened=[]
     await update.message.reply_text(description)
     await update.message.reply_text("Minesweeper Game 🪖\n\n\n Current state: Bomb mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global flag, bomb, bomb_blocks, table, no_after, no_before, game, all, chat_id, message_id
+    global flag, bomb, bomb_blocks, no_after, no_before, game, all, chat_id, message_id, table
     query = update.callback_query
     #await query.answer()
     choice = query.data
+    if game == ["▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️","▫️"]:
+        global table
+        table = make_table(choice)    
     if choice == "flag":
         if not flag : 
             await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(game)))))
@@ -201,7 +199,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             else: 
                 if choice in bomb_blocks:
                     for i in bomb_blocks:
-                        game[i-1] = "💣"
+                        if game[i-1] != "🚩":
+                            game[i-1] = "💣"
                     game[choice-1] = "🧨"
                     await query.edit_message_text("Minesweeper Game 🪖\n\n\n Current state: You lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(chunk(emoji(game)))))
                     await context.bot.setMessageReaction(chat_id=chat_id , message_id=message_id, reaction="🔥", is_big=True)
