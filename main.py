@@ -90,7 +90,12 @@ def chunk(table):
     return(rows)
 
 def make_table(num, chat_id):
+    global all
     data[chat_id]["bomb blocks"] = sorted(random.sample(list(set(all) - set(num)), 10))
+    if num in data[chat_id]["bomb blocks"]:
+        for i in range(len(data[chat_id]["bomb blocks"])):
+            if data[chat_id]["bomb blocks"][i] == num :
+                data[chat_id]["bomb blocks"][i] = random.sample(list(set(all) - set(num)), 1)
     table = []
     i = 1
     while i < 65:
@@ -145,9 +150,6 @@ def make_table(num, chat_id):
         continue
     return(table)
 
-def counter(flags):
-    return(10 - len(flags))
-
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(description)    
 
@@ -163,7 +165,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data[chat_id]["message id"] = update.message.message_id
     data[chat_id]["game"] = copy.deepcopy(default_game)
     data[chat_id]["checked"] = []
-    await update.message.reply_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+    counter = 10 - len(data[chat_id]["flags"])
+    await update.message.reply_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Mine mode 💣", parse_mode='Markdown', reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global no_after, no_before, all, default_game
@@ -174,13 +177,15 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         data[chat_id]["table"] = make_table(choice, chat_id)    
     if choice == "flag":
         if not data[chat_id]["flag"] : 
-            await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+            counter = 10 - len(data[chat_id]["flags"])
+            await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
         data[chat_id]["flag"] = True
         data[chat_id]["bomb"] = False
         await query.answer("Flag mode enabled")        
     elif choice == "bomb":
         if not data[chat_id]["bomb"]: 
-            await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+            counter = 10 - len(data[chat_id]["flags"])
+            await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
         data[chat_id]["flag"] = False
         data[chat_id]["bomb"] = True
         await query.answer("Mine mode enabled")
@@ -192,12 +197,14 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             if choice not in data[chat_id]["flags"] :
                 data[chat_id]["game"][choice - 1] = "🚩"
                 data[chat_id]["flags"].append(choice)
-                await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+                counter = 10 - len(data[chat_id]["flags"])
+                await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
                 await query.answer("Flag added")
             else:
                 data[chat_id]["game"][choice - 1] = "▫️"
                 data[chat_id]["flags"].remove(choice)
-                await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+                counter = 10 - len(data[chat_id]["flags"])
+                await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
                 await query.answer("Flag removed")
         elif data[chat_id]["bomb"]:
             if choice in data[chat_id]["flags"]:
@@ -299,11 +306,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         await context.bot.send_message(text="🎉" ,chat_id=chat_id)
                         await query.answer("Game won")
                     else:
-                        await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter(data[chat_id]["flags"])}\n Current state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
+                        counter = 10 - len(data[chat_id]["flags"])
+                        await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(chunk(emoji(data[chat_id]["game"])))))
                         await query.answer("New cell opened")
 
 def main() -> None:
-    application = Application.builder().token('Your Bot token from @BotFather').build()
+    application = Application.builder().token('TOKEN from @BotFather').build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("info", info))
     application.add_handler(CallbackQueryHandler(button))
