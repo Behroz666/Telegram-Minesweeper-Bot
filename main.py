@@ -180,16 +180,20 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             if not data[chat_id]["flag"] : 
                 counter = counting(data[chat_id]["flags"])
                 await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Flag mode 🚩", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(data[chat_id]["game"])))
-            data[chat_id]["flag"] = True
-            data[chat_id]["bomb"] = False
-            await query.answer("Flag mode enabled")        
+                data[chat_id]["flag"] = True
+                data[chat_id]["bomb"] = False
+                await query.answer("Flag mode enabled")     
+            else: 
+                await query.answer("Flag mode already enabled")   
         elif choice == "bomb":
             if not data[chat_id]["bomb"]: 
                 counter = counting(data[chat_id]["flags"])
                 await query.edit_message_text(f"Minesweeper Game 🪖\n\nMines left: {counter}\nCurrent state: Mine mode 💣", parse_mode='Markdown',reply_markup=InlineKeyboardMarkup(make_keyboard(data[chat_id]["game"])))
-            data[chat_id]["flag"] = False
-            data[chat_id]["bomb"] = True
-            await query.answer("Mine mode enabled")
+                data[chat_id]["flag"] = False
+                data[chat_id]["bomb"] = True
+                await query.answer("Mine mode enabled")
+            else:
+                await query.answer("Bomb mode already enabled")
         elif choice == "done":
             await query.answer("Your game is done. use /start")
         else: 
@@ -217,7 +221,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         for i in data[chat_id]["bomb blocks"]:
                             data[chat_id]["game"][i-1] = "💣"
                         for i in data[chat_id]["flags"]:    
-                            if data[chat_id]["game"][i-1] not in data[chat_id]["bomb blocks"]:
+                            if i not in data[chat_id]["bomb blocks"]:
                                 data[chat_id]["game"][i-1] = "🚩"
                         data[chat_id]["game"][choice-1] = "🧨"
                         await query.edit_message_text(f"Minesweeper Game 🪖\n\nYou lost the game. start new game with /start",reply_markup=InlineKeyboardMarkup(make_done_keyboard(data[chat_id]["game"])))
