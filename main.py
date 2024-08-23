@@ -146,6 +146,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = update.message.chat.id
     if chat_id not in data:
         data[chat_id] = {}
+    data[chat_id]["time"] = time.time()
     data[chat_id]["flags"] = []
     data[chat_id]["opened"] = []
     data[chat_id]["bomb"] = True
@@ -292,7 +293,8 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     if sorted(data[chat_id]["opened"]) == list(set(all) - set(data[chat_id]["bomb blocks"])):
                         for i in data[chat_id]["bomb blocks"]:
                             data[chat_id]["game"][i-1] = "💣"
-                        await query.edit_message_text(f"Minesweeper Game 🪖\n\nCongratulation!! You won the game 🥳 ",reply_markup=InlineKeyboardMarkup(make_done_keyboard(data[chat_id]["game"])))
+                        elapsed_time = time.time() - data[chat_id]["time"]
+                        await query.edit_message_text(f"Minesweeper Game 🪖\n\nCongratulation!! You won the game 🥳\nElapsed time: {elapsed_time:.2f}s",reply_markup=InlineKeyboardMarkup(make_done_keyboard(data[chat_id]["game"])))
                         await context.bot.setMessageReaction(chat_id=chat_id , message_id=data[chat_id]["message id"], reaction="🎉", is_big=True)
                         time.sleep(1)
                         await context.bot.send_message(text="🎉" ,chat_id=chat_id)
