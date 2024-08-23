@@ -174,7 +174,7 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = query.from_user.id  
     query_data = query.message.message_id
     if query_data > data[chat_id]["message id"]:
-        if data[chat_id]["game"] == default_game and int(choice) in all:
+        if data[chat_id]["game"] == default_game and choice not in ["bomb", "flag", "done"]:
             data[chat_id]["table"] = make_table(int(choice), chat_id)    
         if choice == "flag":
             if not data[chat_id]["flag"] : 
