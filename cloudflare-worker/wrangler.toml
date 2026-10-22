@@ -1,0 +1,13 @@
+name = "telegram-minesweeper-bot"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Create the namespace with:
+#   npx wrangler kv namespace create GAMES
+# Then replace the placeholder below with the returned id.
+[[kv_namespaces]]
+binding = "GAMES"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+[observability]
+enabled = true
